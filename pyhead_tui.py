@@ -3,7 +3,6 @@
 pyhead_tui.py
 
 TUI for reading and updating the top-of-file comments of a Python script.
-See README.md for usage.
 """
 
 import sys
@@ -12,7 +11,9 @@ import shutil
 import json
 import tempfile
 import subprocess
+import re
 from collections import OrderedDict
+from datetime import datetime
 
 PROMPT = "pyhead> "
 
@@ -23,6 +24,28 @@ def read_file_lines(path):
 def write_file_lines(path, lines):
     with open(path, "w", encoding="utf-8") as f:
         f.writelines(lines)
+
+def _normalize_tag(tag_raw: str) -> str:
+    """
+    Normalize tag name according to PYHEAD_TAG_TRANSFORM env var.
+
+    Supported transforms:
+      - snake  (default): lower-case and convert whitespace to underscores
+      - lower            : lower-case only (whitespace preserved)
+      - preserve         : preserve tag exactly as provided (trimmed)
+    """
+    mode = os.environ.get("PYHEAD_TAG_TRANSFORM", "snake").lower()
+    tag = tag_raw.strip()
+    if mode == "preserve":
+        return tag
+    if mode == "lower":
+        return tag.lower()
+    # default: snake
+    return re.sub(r"\s+", "_", tag).lower()
+
+def _current_datetime_str():
+    # YYYY-MM-DD HH:MM:SS
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 def parse_header(lines):
     """
@@ -52,7 +75,7 @@ def parse_header(lines):
             header_lines.append(line.rstrip("\n"))
             idx += 1
         else:
-            # first non-comment (or empty non-comment) line -> header ends
+            # first non-comment line -> header ends
             break
 
     # parse header lines: strip leading '#' and one optional space
@@ -60,48 +83,93 @@ def parse_header(lines):
     tags = OrderedDict()
     current_tag = None
 
+    # regex to match "FirstWord: rest-of-line" where FirstWord contains no whitespace/colon
+    firstword_colon_re = re.compile(r'^\s*([^\s:]+)\s*:\s*(.*)$')
+
     for raw in header_lines:
-        # remove leading '#' and one space if present
         content = raw.lstrip()
         if content.startswith("#"):
             content = content[1:]
-        # strip single leading space
         if content.startswith(" "):
             content = content[1:]
         content = content.rstrip("\n")
+
+        # 1) legacy ":tag" marker (colon at start) - allow multi-word tag after the starting colon
         if content.strip().startswith(":"):
-            tag = content.strip()[1:].strip()
-            if tag == "":
-                # ignore empty tag markers
+            tag_part = content.strip()[1:].strip()
+            if tag_part == "":
                 current_tag = None
                 continue
-            if tag not in tags:
-                tags[tag] = []
-            current_tag = tag
+            tag_key = _normalize_tag(tag_part)
+            tags.setdefault(tag_key, [])
+            current_tag = tag_key
+            continue
+
+        # 2) "FirstWord: rest" detection (first colon after the first word)
+        m = firstword_colon_re.match(content)
+        if m:
+            tag_part = m.group(1).strip()
+            rest = m.group(2).rstrip()
+            tag_key = _normalize_tag(tag_part)
+            tags.setdefault(tag_key, [])
+            if rest != "":
+                tags[tag_key].append(rest)
+            current_tag = tag_key
+            continue
+
+        # 3) ordinary comment line: either preamble or part of current tag
+        if current_tag is None:
+            preamble.append(content)
         else:
-            # a normal comment line
-            if current_tag is None:
-                preamble.append(content)
-            else:
-                tags[current_tag].append(content)
+            tags[current_tag].append(content)
 
     return shebang, idx, preamble, tags
 
+def _ensure_default_tags(state):
+    """
+    Ensure certain tags exist in state['tags'] with defaults if missing, and always update DATE.
+
+    Defaults:
+      - FILE: basename of the file (os.path.basename(state['path']))
+      - MISSION: "tbd."
+      - STATUS: "tbd."
+      - NOTES: "tbd."
+      - VERSION: "0.0.0"
+      - DATE: current date/time (always updated)
+    Insert missing tags as single-value lists. Tag keys are normalized.
+    """
+    path = state.get("path", "")
+    tags = state.get("tags", OrderedDict())
+
+    # desired defaults in order (key=raw name, value default string or callable)
+    defaults = [
+        ("FILE", lambda: os.path.basename(path) if path else ""),
+        ("VERSION", lambda: "0.0.0"),
+        ("DATE", _current_datetime_str),  # always updated
+        ("MISSION", lambda: "tbd."),
+        ("STATUS", lambda: "tbd."),
+        ("NOTES", lambda: "tbd."),
+    ]
+
+    for raw_name, value_fn in defaults:
+        key = _normalize_tag(raw_name)
+        val = value_fn()
+        if raw_name == "DATE":
+            # always set/update DATE
+            tags[key] = [val]
+        else:
+            if key not in tags or not tags[key]:
+                tags[key] = [val]
+
+    # write back updated tags
+    state["tags"] = tags
+
 def build_header_lines(shebang, preamble, tags):
-    """
-    Build comment header lines (with trailing newline characters).
-    Returns list of lines (strings with newline).
-    """
     out = []
     if shebang:
         out.append(shebang.rstrip("\n") + "\n")
-    # write preamble
     for p in preamble:
         out.append("# " + p.rstrip("\n") + "\n")
-    if preamble and tags:
-        # add a separating comment line? We'll not add extra; keep as-is
-        pass
-    # write tags
     for tag, values in tags.items():
         out.append("# :" + tag + "\n")
         for v in values:
@@ -109,12 +177,10 @@ def build_header_lines(shebang, preamble, tags):
     # ensure a single blank line after header if there is any header
     if out and (not out[-1].endswith("\n") or out[-1].strip() != ""):
         out.append("\n")
-    # Guarantee at least one newline separator
     if out and not out[-1].strip() == "":
         out.append("\n")
     # Trim duplicate trailing blank lines to a single blank line
     if len(out) >= 2 and out[-1].strip() == "" and out[-2].strip() == "":
-        # remove extra
         while len(out) >= 2 and out[-1].strip() == "" and out[-2].strip() == "":
             out.pop(-2)
     return out
@@ -122,7 +188,7 @@ def build_header_lines(shebang, preamble, tags):
 def load_header_from_file(path):
     lines = read_file_lines(path)
     shebang, header_end, preamble, tags = parse_header(lines)
-    return {
+    state = {
         "path": path,
         "lines": lines,
         "shebang": shebang,
@@ -130,6 +196,9 @@ def load_header_from_file(path):
         "preamble": preamble,
         "tags": tags
     }
+    # ensure defaults (adds/updates tags like FILE, VERSION, DATE, MISSION, STATUS, NOTES)
+    _ensure_default_tags(state)
+    return state
 
 def show_tags(state):
     tags = state["tags"]
@@ -153,22 +222,23 @@ def show_tag(state, tag):
             print(line)
         print("---------------")
         return
+    tag_key = _normalize_tag(tag)
     tags = state["tags"]
-    if tag not in tags:
+    if tag_key not in tags:
         print(f"(tag '{tag}' not found)")
         return
-    print(f"--- :{tag} ---")
-    for line in tags[tag]:
+    print(f"--- :{tag_key} ---")
+    for line in tags[tag_key]:
         print(line)
     print("--------------")
 
 def edit_tag_via_editor(state, tag):
-    # create temp file with current contents
+    tag_key = _normalize_tag(tag)
     cur = []
-    if tag == "preamble":
+    if tag_key == "preamble":
         cur = state["preamble"]
     else:
-        cur = state["tags"].get(tag, [])
+        cur = state["tags"].get(tag_key, [])
     editor = os.environ.get("EDITOR", "vi")
     with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".tmp", encoding="utf-8") as tf:
         tempname = tf.name
@@ -185,13 +255,14 @@ def edit_tag_via_editor(state, tag):
             os.unlink(tempname)
         except Exception:
             pass
-    if tag == "preamble":
+    if tag_key == "preamble":
         state["preamble"] = new
     else:
-        state["tags"][tag] = new
-    print(f"(updated '{tag}')")
+        state["tags"][tag_key] = new
+    print(f"(updated '{tag_key}')")
 
 def set_tag_inline(state, tag):
+    tag_key = _normalize_tag(tag)
     print("Enter lines. End with a single dot on a line '.'")
     lines = []
     while True:
@@ -202,26 +273,28 @@ def set_tag_inline(state, tag):
         if ln.strip() == ".":
             break
         lines.append(ln)
-    if tag == "preamble":
+    if tag_key == "preamble":
         state["preamble"] = lines
     else:
-        state["tags"][tag] = lines
-    print(f"(set {len(lines)} lines for '{tag}')")
+        state["tags"][tag_key] = lines
+    print(f"(set {len(lines)} lines for '{tag_key}')")
 
 def add_tag(state, tag):
-    if tag in state["tags"]:
+    tag_key = _normalize_tag(tag)
+    if tag_key in state["tags"]:
         print("(tag already exists)")
     else:
-        state["tags"][tag] = []
+        state["tags"][tag_key] = []
         print("(tag added)")
 
 def delete_tag(state, tag):
-    if tag == "preamble":
+    tag_key = _normalize_tag(tag)
+    if tag_key == "preamble":
         state["preamble"] = []
         print("(preamble cleared)")
         return
-    if tag in state["tags"]:
-        del state["tags"][tag]
+    if tag_key in state["tags"]:
+        del state["tags"][tag_key]
         print("(tag deleted)")
     else:
         print("(tag not found)")
@@ -242,16 +315,13 @@ def write_back(state):
     preamble = state["preamble"]
     tags = state["tags"]
     new_header_lines = build_header_lines(shebang, preamble, tags)
-    # append the remainder of the file from header_end
     rest = original_lines[header_end:]
     new_lines = new_header_lines + rest
-    # Backup original file
     backup = path + ".bak"
     try:
         shutil.copy2(path, backup)
         write_file_lines(path, new_lines)
         print(f"(wrote header back to {path}; original saved to {backup})")
-        # reload state
         new_state = load_header_from_file(path)
         state.update(new_state)
     except Exception as e:
@@ -283,7 +353,7 @@ def repl(state):
   delete <tag>     Delete a tag
   dump             Dump the parsed dictionary as JSON
   write            Write header back to file
-  reload           Re-read the file (discard unsaved changes)
+  reload           Re-read the file (discarding unsaved changes)
   quit / exit      Exit
 """)
         elif cmd == "list":
@@ -298,9 +368,9 @@ def repl(state):
                 print("usage: edit <tag>")
                 continue
             tag = args[0]
-            if tag != "preamble" and tag not in state["tags"]:
-                # create so the editor starts empty
-                state["tags"].setdefault(tag, [])
+            tag_key = _normalize_tag(tag)
+            if tag_key != "preamble" and tag_key not in state["tags"]:
+                state["tags"].setdefault(tag_key, [])
             edit_tag_via_editor(state, tag)
         elif cmd == "set":
             if not args:

@@ -1,22 +1,36 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# create_repo.sh
+# Bootstraps the full repository "beheaded" with all files, CI, tests, and commits/pushes.
+#
 # Usage:
 #   ./create_repo.sh [OWNER] [REPO] [VISIBILITY] [BRANCH] [COMMIT_MSG] [LICENSE]
+#
 # Defaults:
+#   OWNER=soft9000
+#   REPO=beheaded
+#   VISIBILITY=public
+#   BRANCH=main
+#   COMMIT_MSG="Initial import — add pyhead_tui, README, CI, tests and .gitignore"
+#   LICENSE=mit
+
 OWNER=${1:-soft9000}
 REPO=${2:-beheaded}
-VISIBILITY=${3:-public}   # public or private
+VISIBILITY=${3:-public}
 BRANCH=${4:-main}
-COMMIT_MSG=${5:-"Initial import — add pyhead_tui, README and CI"}
-LICENSE=${6:-mit}        # SPDX id (mit, apache-2.0, gpl-3.0, etc)
+COMMIT_MSG=${5:-"Initial import — add pyhead_tui, README, CI, tests and .gitignore"}
+LICENSE=${6:-mit}
 
+# Create project directory
 mkdir -p "$REPO"
 cd "$REPO"
 
-# README
+# README.md
 cat > README.md <<'README'
 # pyhead-tui
+
+[![CI](https://github.com/soft9000/beheaded/actions/workflows/ci.yml/badge.svg)](https://github.com/soft9000/beheaded/actions)
 
 A small Python TUI (text-based interactive CLI) to read, view, and update the top-of-file comment header of any Python script into an ordered dictionary.
 
