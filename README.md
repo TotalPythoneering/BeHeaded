@@ -1,5 +1,5 @@
 # BeHeaded
-BeHeaded is a small Python console utility to C.R.U.D. standardized header comments at the top of Python scripts. Both a single as weall as multiple files can be 'headed at the same time.
+BeHeaded is a small Python console utility to C.R.U.D. standardized header comments at the top of Python scripts. Both a single - as well as multiple files - can be 'headed at the same time.
 
 ## 'Da Rules
 - Parse header comments at top of Python scripts (preserve shebang).
