@@ -27,6 +27,7 @@ Example `.BeHeaders.json` (per-folder)
   "FILE": "tbd.",
   "WRAP_WIDTH": 80,
   "VERSION": "1.2.3"
+}
 ```
 
 # Quickstart
@@ -46,11 +47,11 @@ Example `.BeHeaders.json` (per-folder)
   - Apply defaults recursively (dry-run): `python beheaded.py --recurse ./project --dry-run`
   - Edit interactively: `python beheaded.py --edit script.py`
 
-# Development / Testing
-- Run unit tests with: `python -m pytest`
-
-# Contributing / Notes
+## Notes
 - The per-folder `.BeHeaders.json` can contain default values for header keys (upper-case keys recommended) and configuration options:
   - `WRAP_WIDTH`: integer width to wrap the `MISSION` value when writing (default 72).
   
 - If `.BeHeaders.json` is empty or invalid JSON, the built-in defaults are used.
+
+### Development / Testing
+- Once the package has been installed, we can run unit tests with: `python -m pytest`
