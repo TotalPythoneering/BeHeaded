@@ -1,9 +1,7 @@
-```markdown
 # BeHeaded
+BeHeaded is a small Python console utility to C.R.U.D. standardized header comments at the top of Python scripts. Both a single as weall as multiple files can be 'headed at the same time.
 
-BeHeaded is a small Python console utility to C.R.U.D. standardized header comments at the top of Python scripts.
-
-Features
+## 'Da Rules
 - Parse header comments at top of Python scripts (preserve shebang).
 - Recognize keys of form `KEY: value` (KEY is single UPPER-CASE word).
 - Default key order: `MISSION`, `STATUS`, `VERSION`, `NOTES`, `DATE`, `FILE`, `AUTHOR`.
@@ -23,20 +21,21 @@ Features
 - `--dry-run` to preview recursive changes without writing.
 
 Example `.BeHeaders.json` (per-folder)
-```json
+```
 {
   "AUTHOR": "Jane Doe",
   "FILE": "tbd.",
   "WRAP_WIDTH": 80,
   "VERSION": "1.2.3"
-}
 ```
 
-Quickstart
+# Quickstart
 - Install: copy `beheaded.py` somewhere on your PATH or run it directly: `python beheaded.py`
+  
 - Run interactive mainloop:
   - `python beheaded.py` (no flags)
   - or `python beheaded.py somefile.py` (single file opens mainloop for that file)
+
 - Helpful CLI examples:
   - List files: `python beheaded.py --list`
   - Show header: `python beheaded.py --show script.py`
@@ -47,15 +46,11 @@ Quickstart
   - Apply defaults recursively (dry-run): `python beheaded.py --recurse ./project --dry-run`
   - Edit interactively: `python beheaded.py --edit script.py`
 
-Development / Testing
+# Development / Testing
 - Run unit tests with: `python -m pytest`
 
-TOML / packaging
-- A `pyproject.toml` is included describing the project metadata and a recommended development environment.
-
-Contributing / Notes
+# Contributing / Notes
 - The per-folder `.BeHeaders.json` can contain default values for header keys (upper-case keys recommended) and configuration options:
   - `WRAP_WIDTH`: integer width to wrap the `MISSION` value when writing (default 72).
+  
 - If `.BeHeaders.json` is empty or invalid JSON, the built-in defaults are used.
-
-```
