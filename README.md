@@ -1,6 +1,8 @@
 # BeHeaded
 BeHeaded is a small Python console utility to C.R.U.D. standardized header comments at the top of Python scripts. Both a single - as well as multiple files - can be 'headed at the same time.
 
+![High Level 'Ops](./_graphics/hld.png)
+
 ## 'Da Rules
 - Parse header comments at top of Python scripts (preserve shebang).
 - Recognize keys of form `KEY: value` (KEY is single UPPER-CASE word).
