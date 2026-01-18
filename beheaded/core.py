@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # MISSION: Core operations.
-# STATUS: Testing
-# VERSION: 0.0.1
+# STATUS: Research
+# VERSION: 0.0.2
 # NOTES: Support automatic file comments.
 # DATE: 2026-01-18 03:59:42
 # FILE: core.py
@@ -657,6 +657,7 @@ def cli_main():
 
 def mainloop(start_file: Optional[str] = None):
     cwd = os.getcwd()
+    print(cwd)
     files = find_python_files(cwd, recurse=False)
     selected: Optional[str] = None
     if start_file:
@@ -825,3 +826,8 @@ def mainloop(start_file: Optional[str] = None):
             continue
 
         print("Unknown command. Type 'help' for commands.")
+
+
+
+if __name__ == '__main__':
+    mainloop()

@@ -6,6 +6,6 @@
 # FILE: __main__.py
 # AUTHOR: Randall Nagy
 #
-from core import mainloop, cli_main
+from .core import mainloop, cli_main
 
 cli_main()
