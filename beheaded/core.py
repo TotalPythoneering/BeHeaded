@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+# MISSION: Core operations.
+# STATUS: Testing
+# VERSION: 0.0.1
+# NOTES: Support automatic file comments.
+# DATE: 2026-01-18 03:59:42
+# FILE: core.py
+# AUTHOR: Randall Nagy
+#
 """
 Core implementation for BeHeaded.
 

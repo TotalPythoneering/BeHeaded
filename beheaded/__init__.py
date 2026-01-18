@@ -1,3 +1,11 @@
+# MISSION: Packaging & testing support.
+# STATUS: Testing
+# VERSION: 0.0.1
+# NOTES: Use the basics.
+# DATE: 2026-01-18 06:53:06
+# FILE: __init__.py
+# AUTHOR: Randall Nagy
+#
 """
 BeHeaded package init - re-export core symbols.
 
@@ -30,8 +38,4 @@ __all__ = [
     "cli_main",
     "mainloop",
 ]
-
-
-if __name__ == '__main__':
-    mainloop()
 

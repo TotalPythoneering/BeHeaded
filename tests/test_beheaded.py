@@ -1,3 +1,13 @@
+# MISSION: Support the testing of the BeHeaded package.
+# STATUS: Production
+# VERSION: 1.0.0
+# NOTES: Pytest test cases.
+# Both pytest and BeHeaded must be installed for these tests to work properly.
+# Place this file in the tests/ directory so pytest will pick it up automatically.
+# DATE: 2026-01-18 03:59:42
+# FILE: test_beheaded.py
+# AUTHOR: Randall Nagy
+#
 import os
 import json
 import textwrap
