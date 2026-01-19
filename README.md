@@ -33,8 +33,9 @@ Example `.BeHeaders.json` (per-folder)
 ```
 
 # Quickstart
-- Install: Uses pip to install the `wheels` file in the `dist` folder 
-python -m pip install dist/latest_whatever_numbers.whl
+- Install: Uses pip to install the `wheels` file in the `dist` folder:
+  
+```python -m pip install dist/latest_whatever_numbers.whl```
   
 - Run interactive mainloop:
   - `python -m beheaded` (no flags)
