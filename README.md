@@ -33,27 +33,30 @@ Example `.BeHeaders.json` (per-folder)
 ```
 
 # Quickstart
-- Install: copy `beheaded.py` somewhere on your PATH or run it directly: `python beheaded.py`
+- Install: Uses pip to install the `wheels` file in the `dist` folder 
+python -m pip install dist/latest_whatever_numbers.whl
   
 - Run interactive mainloop:
-  - `python beheaded.py` (no flags)
-  - or `python beheaded.py somefile.py` (single file opens mainloop for that file)
+  - `python -m beheaded` (no flags)
+  - or `python -m beheaded somefile.py` (single file opens mainloop for that file)
 
 - Helpful CLI examples:
-  - List files: `python beheaded.py --list`
-  - Show header: `python beheaded.py --show script.py`
-  - Add defaults: `python beheaded.py --add script.py`
-  - Remove header: `python beheaded.py --remove script.py`
-  - Bump a file: `python beheaded.py --bump patch script.py`
-  - Bump all under a path: `python beheaded.py --bump-all patch ./src`
-  - Apply defaults recursively (dry-run): `python beheaded.py --recurse ./project --dry-run`
-  - Edit interactively: `python beheaded.py --edit script.py`
+  - List files: `python -m beheaded --list`
+  - Show header: `python -m beheaded --show script.py`
+  - Add defaults: `python -m beheaded --add script.py`
+  - Remove headers: `python -m beheaded --remove script.py`
+  - Bump a file: `python -m beheaded --bump patch script.py`
+  - Bump all under a path: `python -m beheaded --bump-all patch ./src`
+  - Apply defaults recursively (dry-run): `python -m beheaded --recurse ./project --dry-run`
+  - Edit interactively: `python -m beheaded --edit script.py`
 
 ## Notes
 - The per-folder `.BeHeaders.json` can contain default values for header keys (upper-case keys recommended) and configuration options:
   - `WRAP_WIDTH`: integer width to wrap the `MISSION` value when writing (default 72).
   
 - If `.BeHeaders.json` is empty or invalid JSON, the built-in defaults are used.
+
+- After editing `.BeHeaders.json` for the folder you can use `--remove` then `--add` to redo the set.
 
 ### Development / Testing
 - Once the package has been installed, we can run unit tests with: `python -m pytest`
