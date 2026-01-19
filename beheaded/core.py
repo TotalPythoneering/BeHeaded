@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # MISSION: Core operations.
 # STATUS: Research
-# VERSION: 0.0.2
+# VERSION: 0.0.3
 # NOTES: Support automatic file comments.
-# DATE: 2026-01-18 03:59:42
 # FILE: core.py
 # AUTHOR: Randall Nagy
 #
@@ -46,7 +45,6 @@ DEFAULT_WRAP = 72
 BEJSON_NAME = ".BeHeaders.json"
 VERSION_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
 KEY_RE = re.compile(r"^([A-Z]+):\s?(.*)$")
-
 
 def find_python_files(start: str, recurse: bool = False) -> List[str]:
     py_files: List[str] = []
@@ -553,6 +551,11 @@ def cli_main():
     parser.add_argument("--bump-all", metavar=("PART", "PATH"), nargs=2, dest="bump_all", help="Bump VERSION for all python files under PATH. PART is major|minor|patch")
     parser.add_argument("--apply-all-defaults", action="store_true", help="Apply default headers to all found python files (recursively in provided path).")
     parser.add_argument("--select", "-S", metavar="FILE", help="Start mainloop with FILE selected (always opens interactive mainloop).")
+### TODO: Add a global tagging ability:
+##    parser.add_argument("--gload", "-r", metavar="FILE", help="Use a global header set.")
+##    parser.add_argument("--gdefine", "-r", metavar="FILE", help="Define new global header set.")
+##    parser.add_argument("--gupdate", "-r", metavar="FILE", help="Update a global header set.")
+##    parser.add_argument("--gdelete", "-r", metavar="FILE", help="Remove a global header set.")
     args, _ = parser.parse_known_args()
 
     provided_flags = any([args.list, args.show, args.edit, args.add, args.remove, args.recurse,

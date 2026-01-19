@@ -1,6 +1,6 @@
-# MISSION: Packaging & testing support.
-# STATUS: Testing
-# VERSION: 0.0.1
+# MISSION: Packaging, tagging & testing support.
+# STATUS: Research
+# VERSION: 0.0.2
 # NOTES: Use the basics.
 # DATE: 2026-01-18 06:53:06
 # FILE: __init__.py
@@ -25,6 +25,8 @@ from .core import (  # noqa: F401
     mainloop,
 )
 
+from .tag_manager import TagManager
+
 __all__ = [
     "read_file_header",
     "write_header_to_file",
@@ -37,5 +39,6 @@ __all__ = [
     "apply_defaults_recursively",
     "cli_main",
     "mainloop",
+    "TagManager"
 ]
 
