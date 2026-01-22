@@ -6,12 +6,12 @@
 # FILE: storage_file.py
 # AUTHOR: Randall Nagy
 #
-
-import os, shutil
-import json
+import os, sys, os.path
+sys.path.append('..')
+import shutil, json
 from pathlib import Path
 
-from named_dict import NamedDict
+from beheaded.named_dict import NamedDict
 
 class StorageManager:
 
@@ -129,11 +129,12 @@ if __name__ == '__main__':
     import sys
     sut = StorageManager('~test.StorageManager')
     print(f'Testing [{sut.folder_path}]')
-    row = sut.create('testA', {})
+    row = sut.create('testA', dict())
     if not row:
         print('Error 10001: File creation error.')
         sys.exit(9)
     if row.is_null():
+        print(row.name)
         print('Error 10010: File creation error.')
         sys.exit(9)
     row = sut.read('testA')

@@ -6,7 +6,6 @@
 # FILE: named_dict.py
 # AUTHOR: Randall Nagy
 #
-
 class NamedDict:
     ''' Files are / were just named sets of data. '''
     def __init__(self):
@@ -51,7 +50,7 @@ class NamedDict:
         ''' See if the instance can be used. '''
         if self.name == None or self.data == None:
             return True
-        return isinstance(self.name, str) and isinstance(self.data, dict)
+        return not isinstance(self.name, str) and isinstance(self.data, dict)
 
 
 if __name__ == '__main__':
@@ -63,7 +62,7 @@ if __name__ == '__main__':
         print("Error 10010")
     elif not NamedDict.Create('zoom', None).is_null():
         print("Error 10020")
-    elif not NamedDict.Create('zoom', dict()).is_null():
+    elif NamedDict.Create('zoom', {}).is_null():
         print("Error 10030")
     else:
         print("Testing Success.")

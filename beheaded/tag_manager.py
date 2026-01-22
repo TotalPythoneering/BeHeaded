@@ -7,10 +7,11 @@
 # AUTHOR: Randall Nagy
 #
 import os, sys, shutil
+sys.path.append('..')
 import json
 from pathlib import Path
-from named_dict import NamedDict
-from storage_file import StorageManager
+from beheaded.named_dict import NamedDict
+from beheaded.storage_file import StorageManager
 
 class TagManager:
     """ Manage user-named dictionaries in a database in a specific folder. """ 
@@ -112,7 +113,7 @@ class TagManager:
             print(" ... ignored ...")
         return data
     
-    def edit_keyes(self, named_dict:NamedDict)->NamedDict:
+    def edit_keys(self, named_dict:NamedDict)->NamedDict:
         if not isinstance(named_dict, NamedDict):
             return NamedDict() # gigo
         if named_dict.data == None:
@@ -125,7 +126,7 @@ class TagManager:
         if not name:
             print('no data.')
             return
-        if self.dba.exists(name):
+        if not self.dba.exists(name):
             print(f'not found.')
             return
         return self.dba.read(name)   
@@ -135,7 +136,7 @@ class TagManager:
         if not name:
             print('no data.')
             return
-        if self.dba.exists(name):
+        if not self.dba.exists(name):
             print(f'not found.')
             return
         named_dict = self.exe_read_set(name)
@@ -167,7 +168,7 @@ class TagManager:
         if not name:
             print('no data.')
             return
-        if self.dba.exists(name):
+        if not self.dba.exists(name):
             print(f'not found.')
             return
         if self.dba.delete(name):

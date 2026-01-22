@@ -3,6 +3,7 @@
 # STATUS: Research
 # VERSION: 0.0.3
 # NOTES: Support automatic file comments.
+# DATE: 2026-01-21 17:42:23
 # FILE: core.py
 # AUTHOR: Randall Nagy
 #
@@ -40,7 +41,13 @@ from datetime import datetime
 from typing import List, Dict, Tuple, Optional
 
 DEFAULT_ORDER = ["MISSION", "STATUS", "VERSION", "NOTES", "DATE", "FILE", "AUTHOR"]
-STATUS_ALLOWED = ["Production", "Testing", "Research"]
+STATUS_ALLOWED = ["Production",
+                  "Testing",
+                  "Research",
+                  "Obsolete",
+                  "Abandoned",
+                  "Withdrawn",
+                  "Unknown"]
 DEFAULT_WRAP = 72
 BEJSON_NAME = ".BeHeaders.json"
 VERSION_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
