@@ -1,19 +1,19 @@
-# MISSION: Create an independant tag file manager.
+# MISSION: Create a NamedDict storage system.
 # STATUS: Testing
-# VERSION: 0.0.0
-# NOTES: A nice database for simple data.
-# DATE: 2026-01-19 03:09:25
+# VERSION: 0.1.0
+# NOTES: Using NamedDict as the data-model for this controller.
+# DATE: 2026-01-21 20:53:56
 # FILE: tag_manager.py
 # AUTHOR: Randall Nagy
 #
-import os, shutil
+import os, sys, shutil
 import json
 from pathlib import Path
-
+from named_dict import NamedDict
+from storage_file import StorageManager
 
 class TagManager:
-    """ Manage user-named dictionaries as JSON files in a specified folder. """ 
-
+    """ Manage user-named dictionaries in a database in a specific folder. """ 
     def __init__(self, app_name, folder_path=None):
         """ Instance a TagManager for a folder path. Folder need not exist. """ 
         self.user_path = Path.home() / app_name
@@ -22,6 +22,7 @@ class TagManager:
             folder_path = self.user_path
         self.folder_path = Path(folder_path).resolve()
         self.escape = '.!' # special 'ops token
+        self.dba = StorageManager(app_name, self.folder_path) # driver
 
     def destroy_app_folder(self)->bool:
         """ Remove the app folder and all it contains. """
@@ -46,21 +47,14 @@ class TagManager:
         if not self.check_folder_exists():
             self.folder_path.mkdir(parents=True, exist_ok=True)
 
-    def _get_file_path(self, name):
-        """ Helper to get the full file path for a file name. """
-        if name.endswith('.json'):
-            return self.folder_path / name
-        return self.folder_path / f"{name}.json"
-
-    def exe_create_file(self, name, data=None):
-        """ Create a new file (JSON file). Loops to collect data when none. """
+    def exe_create_set(self, name, data=None):
+        """ Create a new Collection (named dictionary). Loops to collect data when none. """
         if not name:
-            print('no file.')
+            print('Collection name is invalid..')
             return
-        file_path = self._get_file_path(name)
-        if file_path.exists():
-            print(f"Error: file '{name}' already exists.")
-            return False
+        if self.dba.exists(name):
+            print(f'Collection [{name}] already exists.')
+            return
         if not data:
             data = {}
             while True:
@@ -70,34 +64,27 @@ class TagManager:
                     break
                 value = input(f"Value for {key}: ").strip()
                 data[key] = value
-        with open(file_path, 'w') as f:
-            json.dump(data, f, indent=4)
-        print(f"Created file: '{name}'")
-        return True
+        if self.dba.create(name, data):
+            print(f"Created collection '{name}'")
+            return True
+        return False
 
     def show_dict(self, a_dict):
         ''' Line a dictionary to the screen. '''
         if not a_dict:
             print("{}")
-        else:
-            for key in a_dict:
-                print(f"{key} : {a_dict[key]}")
+            return
+        if isinstance(a_dict, NamedDict):
+            a_dict = a_dict.data
+        if not isinstance(a_dict, dict):
+            print("{}")
+            return
+        for key in a_dict:
+            print(f"{key} : {a_dict[key]}")
         print()
 
-    def exe_read_file(self, name):
-        """ Read a file (JSON file) data. """
-        if not name:
-            print('no file.')
-            return
-        file_path = self._get_file_path(name)
-        if file_path.exists():
-            with open(file_path, 'r') as f:
-                return json.load(f)
-        else:
-            print(f"Error: file '{name}' not found.")
-            return None
 
-    def edit_keys(self, data:dict)->dict:
+    def _edit_keys(self, data:dict)->dict:
         print("~~~ Key Editor ~~~")
         keys = list(data.keys())
         for ss, key in enumerate(keys,1):
@@ -124,106 +111,122 @@ class TagManager:
             print(ex)
             print(" ... ignored ...")
         return data
+    
+    def edit_keyes(self, named_dict:NamedDict)->NamedDict:
+        if not isinstance(named_dict, NamedDict):
+            return NamedDict() # gigo
+        if named_dict.data == None:
+            named_dict.data = dict()
+        named_dict.data = self._edit_keys(named_dict.data)
+        return named_dict    
 
-    def exe_update_file(self, name)->bool:
+    def exe_read_set(self, name):
+        """ Read a named dictionary (a.k.a 'collection') data. """
+        if not name:
+            print('no data.')
+            return
+        if self.dba.exists(name):
+            print(f'not found.')
+            return
+        return self.dba.read(name)   
+
+    def exe_update_set(self, name)->bool:
         ''' Dynamic dictionary update loop. '''
         if not name:
-            print('no file.')
+            print('no data.')
             return
-        data = self.exe_read_file(name)
-        if not data:
-            return self.exe_create_file() # meh
-
+        if self.dba.exists(name):
+            print(f'not found.')
+            return
+        named_dict = self.exe_read_set(name)
+        if not named_dict:
+            return False
+        
         while True:
-            print(f"Editing values. Enter blank key to update file '{name}'.")
-            self.show_dict(data)
+            print(f"Editing values. Enter blank key to update Collection '{name}'.")
+            self.show_dict(named_dict)
             print(f"Enter {self.escape} to manage Keys.")
             key_input = input("Add/update Key: ").strip()
             if not key_input:
                 break
             if key_input == self.escape:
-                data = self.edit_keys(data)
+                named_dict = self.edit_keys(named_dict)
                 continue
             
             value_input = input("New Value: ").strip()
-            data[key_input] = value_input
+            named_dict.data[key_input] = value_input
 
-        if data is not None:
-            with open(self._get_file_path(name), 'w') as f:
-                json.dump(data, f, indent=4)
-            print(f"Updated file '{name}'.")
+        if named_dict is not None:
+            if self.dba.update(named_dict):
+                print(f"Updated Collection '{name}'.")
+            else:
+                print(f"Unable to update '{name}'.")
 
-    def exe_delete_file(self, name):
-        """ Delete a file (JSON file). """
+    def exe_delete_set(self, name):
+        """ Delete a named collection. """
         if not name:
-            print('no file.')
+            print('no data.')
             return
-        file_path = self._get_file_path(name)
-        if file_path.exists():
-            file_path.unlink()
-            print(f"Deleted file: '{name}'")
+        if self.dba.exists(name):
+            print(f'not found.')
+            return
+        if self.dba.delete(name):
+            print(f"Deleted collection: '{name}'")
             return True
         else:
-            print(f"Error: file '{name}' not found.")
+            print(f"Error: Collection '{name}' not found.")
             return False
 
-    def get_json_files(self):
-        """ List the names of all user created JSON files. """ 
-        files = self.folder_path.glob("*.json")
-        return [file.stem for file in files]
-
     def exe_list(self):
-        """ Display the list of files. """
-        files = self.get_json_files()
-        if files:
-            print("Available:")
-            for ss, f in enumerate(files, 1):
+        """ Display collection list. """
+        rows = self.dba.list()
+        if rows:
+            print("Collection:")
+            for ss, f in enumerate(rows, 1):
                 print(f"{ss}) {f}")
-        else:
-            print(f"No files in {self.folder_path}.")
 
     def do_create(self, **kwargs):
-        ''' Create a new data file. '''
-        name = input("Enter file name: ").strip()
-        self.exe_create_file(name)
+        ''' Create a new named collection. '''
+        name = input("Enter collection name: ").strip()
+        self.exe_create_set(name)
     
     def do_read(self, **kwargs):
-        ''' Show file content. '''
-        name = input("Enter file name to read: ").strip()
-        self.show_dict(self.exe_read_file(name))
+        ''' Show Collection content. '''
+        name = input("Enter Collection name to read: ").strip()
+        self.show_dict(self.exe_read_set(name))
     
     def do_update(self, **kwargs):
-        ''' Update file content. '''
-        name = input("Enter file name to update: ").strip()
-        self.exe_update_file(name)
+        ''' Update Collection content. '''
+        name = input("Enter name to update: ").strip()
+        self.exe_update_set(name)
     
     def do_delete(self, **kwargs):
-        ''' Delete a file. '''
-        name = input("Enter file name to delete: ").strip()
-        self.exe_delete_file(name)
+        ''' Delete a collection. '''
+        name = input("Enter name to delete: ").strip()
+        self.exe_delete_set(name)
     
     def do_list(self, **kwargs):
-        ''' List all files. '''
+        ''' List all collections. '''
         self.exe_list()
     
     def do_report(self, **kwargs):
-        ''' List all file content. '''
-        files = self.get_json_files()
-        if files:
-            print("*** File Report ***\n")
-            for a_file in files:
-                print(f"File: [{a_file}]")
-                data = self.exe_read_file(a_file)
+        ''' List all Collection content. '''
+        rows = self.dba.list()
+        if rows:
+            print("*** Collection Report ***\n")
+            for a_set in rows:
+                print(f"Collection: [{a_set}]")
+                data = self.exe_read_set(a_set)
                 self.show_dict(data)
         else:
-            print(f"No files in {self.folder_path}.")    
+            print(f"No data in {self.folder_path}.")    
     
     def do_quit(self, **kwargs):
         ''' Quit the interface manager. '''
-        exit(0)
+        sys.exit(0)
 
     def mainloop(self):
-        """ Provide a basic interactive TUI for managing json files in the folder. """ 
+        """ Provide a basic interactive TUI for managing named dictionaries. """ 
         print(f"\n--- Tag Manager TUI ---")
         print(f"Managing folder: {self.folder_path}")
         self.create_folder_if_not_exists()
@@ -258,14 +261,14 @@ class TagManager:
                 times += 1
                 if times > 12:
                     print("I've no time for this - bye!")
-                    exit(1001)
+                    sys.exit(1001)
                 print(ex)
                 print("Numbers only, please.")
                 continue
 
 
 if __name__ == '__main__':
-    sut = TagManager("~TagManager9000")
+    sut = TagManager("~TagManager9K")
     sut.mainloop()
 ##    if sut.destroy_app_folder():
 ##        print(f"{sut.user_path} removed.")
